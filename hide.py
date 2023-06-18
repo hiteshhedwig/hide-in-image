@@ -74,6 +74,5 @@ class UnHideFromImage(object):
                     break
                 val = int(image[row][col]/255)
                 binary_str = binary_str+str(val)
-                print(val)
 
         return binary_str
