@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import tqdm
+import math
 
 class HideText(object):
     def __init__(self, text):
@@ -8,21 +9,13 @@ class HideText(object):
 
     @staticmethod
     def str_to_binary(string):
-        # Initialize empty list to store binary values
-        binary_list = []
-        # Iterate through each character in the string
-        for char in string:
-            # Convert character to binary, pad with leading zeroes and append to list
-            binary_list.append(bin(ord(char))[2:].zfill(8))         
-        # Join the binary values in the list and return as a single string
-        return ''.join(binary_list)
+        binary_paragraph = ''.join(format(ord(char), '08b') for char in string)
+        return binary_paragraph
     
     @staticmethod
     def get_decoded_text(binary):
-        input_string=int(binary, 2);
-        total_bytes= (input_string.bit_length() +7) // 8
-        input_array = input_string.to_bytes(total_bytes, "big")
-        return input_array.decode()
+        decoded_string = ''.join(chr(int(binary[i:i+8], 2)) for i in range(0, len(binary), 8))
+        return decoded_string
     
     def __repr__(self) -> str:
         return self.binary
@@ -32,22 +25,30 @@ class HideText(object):
     
 class HideInImage(object):
     def __init__(self, binary_eqv):
-        IMAGE_SIZE =  (100, 100)
-        self.image = np.zeros(IMAGE_SIZE, dtype=np.float32) + [0]#*255
+        IMAGE_SIZE =  self.get_image_size(binary_eqv)
         self.binary_eqv = binary_eqv
+        self.image = np.zeros(IMAGE_SIZE, dtype=np.float32) + [0]#*255
         
+    def get_image_size(self, binary_size):
+        size = binary_size
+        a = len(str(size))*2
+        closest = math.ceil(math.sqrt(a))
+        return (closest,closest)
+
+
     def process(self):
         print("Processing ")
         shape = self.image.shape
 
         count = 0
         total_binary_bytes = len(self.binary_eqv)
-
+        print(total_binary_bytes)
         for row in tqdm.tqdm(range(0, shape[0])):
             for col in range(0, shape[1]):
-                if count < total_binary_bytes:
-                    self.image[row][col] = int(self.binary_eqv[count])
-                    count += 1
+                if (row%2) == 0:
+                    if count < total_binary_bytes:
+                        self.image[row][col] = int(self.binary_eqv[count])
+                        count += 1
 
         self.image = self.image*255
         img_merged = cv2.merge((self.image,self.image,self.image))
@@ -67,12 +68,16 @@ class UnHideFromImage(object):
         shape = image.shape
 
         binary_str = ""
-        last_one_index = None
+        last_one_idx = None
         for row in tqdm.tqdm(range(0, shape[0])):
             for col in range(0, shape[1]):
-                if int(image[row][col]) == 119:
-                    break
-                val = int(image[row][col]/255)
-                binary_str = binary_str+str(val)
+                if (row%2) == 0:
+                    val = int(image[row][col]/255)
+                    binary_str = binary_str+str(val)
+                    if val == 1 :
+                        last_one_idx = val
 
-        return binary_str
+
+        # print(binary_str)
+
+        return binary_str[:]
