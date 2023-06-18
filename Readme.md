@@ -7,7 +7,8 @@
 
 
 #### Output
-![img](coded_img.jpg)
+<img src="coded_img.jpg" alt="Image" width="300" height="200">
+<!-- ![img](coded_img.jpg) -->
 
 #### Execute :
 
